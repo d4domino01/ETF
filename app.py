@@ -430,15 +430,29 @@ if "recommendations" not in st.session_state:
 
 @st.cache_data(ttl=600)
 def get_price(ticker):
-    """Get current price with error handling"""
     try:
         stock = yf.Ticker(ticker)
+
+        # Try intraday first
+        hist = stock.history(period="1d", interval="1m")
+        if not hist.empty:
+            return round(hist["Close"].iloc[-1], 2)
+
+        # Fallback to daily
         hist = stock.history(period="5d")
         if not hist.empty:
             return round(hist["Close"].iloc[-1], 2)
-        return 0.0
+
+        # Fallback to fast_info
+        if hasattr(stock, "fast_info"):
+            price = stock.fast_info.get("last_price")
+            if price:
+                return round(price, 2)
+
+        return None
     except:
-        return 0.0
+        return None
+
 
 @st.cache_data(ttl=3600)
 def get_etf_info(ticker):
