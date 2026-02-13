@@ -356,7 +356,7 @@ if "monthly_deposit" not in st.session_state:
     st.session_state.monthly_deposit = 200.0
 
 if "target_income" not in st.session_state:
-    st.session_state.target_income = 5000.0
+    st.session_state.target_income = 1000.0
 
 if "PORTFOLIO_LOCKED" not in st.session_state:
     st.session_state.PORTFOLIO_LOCKED = False
