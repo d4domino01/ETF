@@ -1702,8 +1702,1031 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "📸 Snapshots"
 ])
 
-# ... Rest of the tabs implementation continues...
-# [Due to length constraints, I'll note that tabs 1-9 implementation continues here with the same logic as before]
+# =====================================================
+# TAB 1: AI COMMAND CENTER
+# =====================================================
+with tab1:
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors in Portfolio Editor to unlock AI features")
+    else:
+        st.subheader("🤖 AI Recommendations & Actions")
+        
+        # Generate recommendations
+        if st.button("🔄 Refresh AI Analysis", type="primary"):
+            with st.spinner("AI analyzing portfolio..."):
+                st.session_state.recommendations = generate_ai_recommendations()
+                st.success("Analysis complete!")
+        
+        if not st.session_state.recommendations:
+            st.session_state.recommendations = generate_ai_recommendations()
+        
+        # Display recommendations
+        if st.session_state.recommendations:
+            st.markdown(f"**Found {len(st.session_state.recommendations)} recommendations**")
+            
+            for idx, rec in enumerate(st.session_state.recommendations):
+                priority_colors = {
+                    "CRITICAL": "alert-critical",
+                    "HIGH": "alert-warning",
+                    "MEDIUM": "alert-info",
+                    "LOW": "alert-success"
+                }
+                
+                alert_class = priority_colors[rec["priority"]]
+                
+                st.markdown(f"""
+                <div class="{alert_class}">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                        <div>
+                            <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem;">{rec['title']}</div>
+                            <div style="font-size: 0.85rem; opacity: 0.8;">Priority: {rec['priority']} | Confidence: {rec['confidence']}%</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 0.5rem; font-weight: 700;">
+                            {rec['ticker']}
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong>Analysis:</strong> {rec['description']}
+                    </div>
+                    <div style="margin-bottom: 0.75rem;">
+                        <strong>Recommended Action:</strong> {rec['action']}
+                    </div>
+                    <div style="font-size: 0.9rem; opacity: 0.9;">
+                        <strong>Expected Impact:</strong> {rec['impact']}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.session_state.autopilot["enabled"] and st.session_state.autopilot["require_approval"]:
+                    col1, col2, col3 = st.columns([1, 1, 4])
+                    with col1:
+                        if st.button("✓ Execute", key=f"exec_{idx}"):
+                            st.success(f"Action approved! (Demo mode - no actual trades executed)")
+                    with col2:
+                        if st.button("✗ Dismiss", key=f"dismiss_{idx}"):
+                            st.info("Recommendation dismissed")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+        else:
+            st.success("✅ No critical actions needed right now. Portfolio looking good!")
+        
+        st.divider()
+        
+        # Portfolio Risk Score
+        st.subheader("🛡️ Portfolio Risk Assessment")
+        
+        risk_data = calculate_portfolio_risk_score()
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.markdown(f"""
+            <div class="{risk_data['risk_class']}">
+                {risk_data['total_score']:.0f}/100
+                <div style="font-size: 1.2rem; margin-top: 0.5rem;">{risk_data['risk_level']} RISK</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown("### Risk Breakdown")
+            for category, score in risk_data["scores"].items():
+                max_score = {
+                    "diversification": 20,
+                    "dividend_stability": 25,
+                    "price_performance": 20,
+                    "yield_sustainability": 20,
+                    "risk_exposure": 15
+                }[category]
+                
+                pct = (score / max_score) * 100
+                color = "#22c55e" if pct >= 70 else "#f59e0b" if pct >= 40 else "#ef4444"
+                
+                st.markdown(f"""
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span style="text-transform: capitalize;">{category.replace('_', ' ')}</span>
+                        <span style="font-weight: 700;">{score:.1f}/{max_score}</span>
+                    </div>
+                    <div style="background: #1e293b; border-radius: 0.5rem; height: 0.75rem; overflow: hidden;">
+                        <div style="background: {color}; height: 100%; width: {pct}%; transition: width 0.5s;"></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+# =====================================================
+# TAB 2: WEEKLY INVESTMENT ADVISOR
+# =====================================================
+with tab2:
+    st.subheader("💡 This Week's Investment Recommendation")
+    
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors to get investment recommendations")
+    else:
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            st.markdown("""
+            **Smart investment guidance based on:**
+            - 📰 News sentiment & market conditions
+            - 📈 Price trends (buying dips = opportunities!)
+            - 💰 Dividend stability & yield
+            - ⚖️ Portfolio balance & concentration
+            - 🎯 Risk level assessment
+            """)
+        
+        with col2:
+            if st.button("🔄 Get Recommendation", type="primary", use_container_width=True):
+                with st.spinner("Analyzing all factors..."):
+                    st.session_state.weekly_rec = generate_weekly_investment_recommendation()
+        
+        # Generate recommendation if not exists
+        if "weekly_rec" not in st.session_state:
+            with st.spinner("Analyzing markets..."):
+                st.session_state.weekly_rec = generate_weekly_investment_recommendation()
+        
+        rec = st.session_state.weekly_rec
+        
+        # MAIN RECOMMENDATION
+        st.markdown("---")
+        
+        # Create a nice container with border
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 3px solid {rec['confidence_color']}; border-radius: 1rem; padding: 2rem; margin: 1rem 0;">
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <div style="font-size: 1rem; opacity: 0.8; margin-bottom: 0.5rem;">💡 THIS WEEK, INVEST IN:</div>
+                <div style="font-size: 3.5rem; font-weight: 700; color: {rec['confidence_color']}; margin: 0.5rem 0;">
+                    {rec['recommended_ticker']}
+                </div>
+                <div style="font-size: 1.2rem; font-weight: 600; color: {rec['confidence_color']};">
+                    Confidence: {rec['confidence']}
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Analysis breakdown - use Streamlit native
+        st.markdown("**📊 Analysis Breakdown:**")
+        for reason in rec['reasoning']:
+            st.markdown(f"- {reason}")
+        
+        # Warnings
+        if rec['warnings']:
+            st.warning("**⚠️ Warnings:**")
+            for warning in rec['warnings']:
+                st.markdown(f"- {warning}")
+        
+        st.info(f"**Alternative option:** {rec['alternative']} (if diversifying this week)")
+        
+        # ALL SCORES COMPARISON
+        st.divider()
+        st.markdown("### 📊 All ETF Scores (This Week)")
+        
+        cols = st.columns(3)
+        for idx, (ticker, score_data) in enumerate(sorted(rec["all_scores"].items(), key=lambda x: x[1]["total_score"], reverse=True)):
+            with cols[idx]:
+                # Determine rank
+                rank_emoji = ["🥇", "🥈", "🥉"][idx]
+                rank_color = ["#ffd700", "#c0c0c0", "#cd7f32"][idx]
+                
+                # Header
+                st.markdown(f"""
+                <div style="background: #1e293b; border-radius: 1rem; padding: 1.5rem; border: 2px solid {rank_color if idx == 0 else '#334155'}; text-align: center;">
+                    <div style="font-size: 2rem;">{rank_emoji}</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #3b82f6; margin: 0.5rem 0;">{ticker}</div>
+                    <div style="font-size: 2.5rem; font-weight: 700; color: {rank_color if idx == 0 else '#94a3b8'};">
+                        {score_data['total_score']}/100
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Factors - use native Streamlit
+                st.markdown("**Factors:**")
+                for factor in score_data['factors'][:4]:
+                    st.caption(factor)
+                
+                st.caption("_Yield = annual dividend income / current market value_")
+                
+                # Warnings
+                if score_data['warnings']:
+                    st.warning(f"⚠️ {score_data['warnings'][0]}", icon="⚠️")
+        
+        # SUGGESTED INVESTMENT AMOUNTS
+        st.divider()
+        st.markdown("### 💰 Suggested Investment Amount")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            investment_amount = st.number_input(
+                "How much are you investing this week?",
+                min_value=0.0,
+                value=st.session_state.monthly_deposit / 4.33,  # Monthly to weekly
+                step=50.0,
+                help="Your regular $200/month = ~$46/week"
+            )
+        
+        with col2:
+            if investment_amount > 0:
+                best_ticker = rec["recommended_ticker"]
+                best_price = get_price(best_ticker)
+                shares_to_buy = int(investment_amount / best_price) if best_price > 0 else 0
+                leftover = investment_amount - (shares_to_buy * best_price)
+                
+                weekly_div_income = shares_to_buy * st.session_state.holdings[best_ticker]["div"]
+                monthly_div_income = weekly_div_income * 52 / 12
+                annual_div_income = weekly_div_income * 52
+                
+                st.markdown(f"""
+                <div style="background: #1e293b; padding: 1.5rem; border-radius: 1rem; border: 2px solid #22c55e;">
+                    <div style="font-weight: 700; margin-bottom: 1rem;">💵 Investment Breakdown:</div>
+                    <div style="line-height: 2;">
+                        <strong>Buy:</strong> {shares_to_buy} shares of {best_ticker}<br>
+                        <strong>Cost:</strong> ${shares_to_buy * best_price:.2f}<br>
+                        <strong>Leftover:</strong> ${leftover:.2f}<br>
+                        <hr style="margin: 1rem 0; opacity: 0.3;">
+                        <strong>Weekly income added:</strong> <span style="color: #22c55e;">${weekly_div_income:.2f}</span><br>
+                        <strong>Monthly income added:</strong> <span style="color: #22c55e;">${monthly_div_income:.2f}</span><br>
+                        <strong>Annual income added:</strong> <span style="color: #22c55e;">${annual_div_income:.2f}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+        
+        # AUTO-REBALANCER
+        st.divider()
+        st.markdown("### 🔄 Auto-Rebalancer Analysis")
+        
+        if st.button("🤖 Generate Rebalancing Plan", use_container_width=True):
+            with st.spinner("Analyzing portfolio balance..."):
+                st.session_state.rebalance_plan = generate_auto_rebalance_plan()
+        
+        if "rebalance_plan" in st.session_state:
+            plan = st.session_state.rebalance_plan
+            
+            if plan["needs_rebalancing"]:
+                st.warning(f"⚠️ Rebalancing recommended - Portfolio needs adjustment")
+                
+                # Show actions
+                st.markdown("#### Recommended Actions:")
+                
+                for idx, action in enumerate(plan["actions"]):
+                    if action["type"] == "SELL":
+                        st.markdown(f"""
+                        <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                            <strong>📉 SELL {action['shares']} shares of {action['ticker']}</strong><br>
+                            <em>Proceeds: ${action['proceeds']:.2f}</em><br>
+                            <small>Reason: {action['reason']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:  # BUY
+                        st.markdown(f"""
+                        <div style="background: rgba(34, 197, 94, 0.1); border-left: 4px solid #22c55e; padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem;">
+                            <strong>📈 BUY {action['shares']} shares of {action['ticker']}</strong><br>
+                            <em>Cost: ${action['cost']:.2f}</em><br>
+                            <small>Reason: {action['reason']}</small>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
+                # Show impact
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Income Before", f"${plan['income_before']:.2f}")
+                with col2:
+                    st.metric("Income After", f"${plan['income_after']:.2f}")
+                with col3:
+                    st.metric("Income Change", f"${plan['income_change']:+.2f}", 
+                             delta=f"{(plan['income_change']/plan['income_before']*100):+.1f}%" if plan['income_before'] > 0 else "N/A")
+                
+                st.info(f"ℹ️ {plan['risk_improvement']}")
+                
+                if st.session_state.autopilot.get("auto_rebalance") and st.session_state.autopilot.get("require_approval"):
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("✅ Execute Rebalance", type="primary", use_container_width=True):
+                            st.success("✅ Rebalancing plan approved! (Demo mode - no actual trades)")
+                    with col2:
+                        if st.button("❌ Dismiss", use_container_width=True):
+                            del st.session_state.rebalance_plan
+                            st.rerun()
+            else:
+                st.success("✅ Portfolio is well-balanced! No rebalancing needed this week.")
+                st.info("Your holdings are optimally distributed. Continue with regular investments.")
+
+# =====================================================
+# TAB 3: DASHBOARD
+# =====================================================
+with tab3:
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors to view dashboard")
+    else:
+        metrics = calculate_current_metrics()
+        
+        # KEY METRICS
+        st.subheader("Portfolio Overview")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Value", f"${metrics['total_value']:,.0f}",
+                     delta=f"{metrics['total_gain_loss_pct']:+.1f}%")
+        
+        with col2:
+            st.metric("Monthly Income", f"${metrics['monthly_income']:,.0f}", 
+                     delta=f"${metrics['total_weekly']:.0f}/week")
+        
+        with col3:
+            st.metric("Annual Income", f"${metrics['annual_income']:,.0f}",
+                     delta=f"{metrics['total_yield']:.1f}% yield")
+        
+        with col4:
+            cash_pct = (st.session_state.cash / metrics['total_value'] * 100) if metrics['total_value'] > 0 else 0
+            st.metric("Total Gain/Loss", f"${metrics['total_gain_loss']:,.0f}",
+                     delta=f"{metrics['total_gain_loss_pct']:+.1f}%")
+        
+        st.divider()
+        
+        # GOAL PROGRESS
+        st.subheader("🎯 Income Goal Progress")
+        
+        current = metrics['monthly_income']
+        target = st.session_state.target_income
+        progress = min((current / target * 100), 100) if target > 0 else 0
+        gap = target - current
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.metric("Monthly Target", f"${target:,.0f}")
+            st.metric("Current Income", f"${current:,.0f}")
+            st.metric("Gap to Target", f"${gap:,.0f}")
+        
+        with col2:
+            progress_color = "#22c55e" if progress >= 80 else "#f59e0b" if progress >= 50 else "#ef4444"
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 2px solid {progress_color}; border-radius: 1rem; padding: 2rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="font-weight: 600;">Progress to Goal</span>
+                    <span style="font-weight: 700; color: {progress_color};">{progress:.1f}%</span>
+                </div>
+                <div style="background: #1e293b; border-radius: 1rem; height: 2.5rem; overflow: hidden;">
+                    <div style="background: linear-gradient(90deg, {progress_color} 0%, {progress_color} 100%); height: 100%; width: {progress}%; display: flex; align-items: center; justify-content: flex-end; padding-right: 1rem; color: white; font-weight: 700; transition: width 0.5s;">
+                        {progress:.0f}%
+                    </div>
+                </div>
+                <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.75rem;">
+                    {'🎉 Goal reached! Consider increasing target.' if gap <= 0 else f'Need ${gap:,.0f}/month more (${gap*12/52:.0f}/week)'}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # CHARTS
+        st.subheader("Portfolio Analysis")
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Income by holding
+            income_data = []
+            for h in metrics["holdings"]:
+                income_data.append({"ETF": h["ticker"], "Monthly Income": h["monthly"]})
+            
+            df_income = pd.DataFrame(income_data)
+            fig_income = px.bar(df_income, x="ETF", y="Monthly Income",
+                               title="Monthly Income by Holding",
+                               color="Monthly Income", color_continuous_scale="Greens")
+            fig_income.update_layout(showlegend=False, height=350, margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig_income, use_container_width=True)
+        
+        with col2:
+            # Portfolio allocation
+            allocation_data = []
+            for h in metrics["holdings"]:
+                allocation_data.append({"ETF": h["ticker"], "Value": h["value"]})
+            
+            df_allocation = pd.DataFrame(allocation_data)
+            fig_pie = px.pie(df_allocation, values="Value", names="ETF",
+                            title="Portfolio Allocation by Value",
+                            color_discrete_sequence=px.colors.sequential.Blues_r)
+            fig_pie.update_layout(height=350, margin=dict(l=20, r=20, t=40, b=20))
+            st.plotly_chart(fig_pie, use_container_width=True)
+        
+        st.divider()
+        
+        # HOLDINGS TABLE with P&L
+        st.subheader("Holdings Detail")
+        holdings_df = pd.DataFrame([{
+            "Ticker": h["ticker"],
+            "Shares": h["shares"],
+            "Price": f"${h['price']:.2f}",
+            "Cost Basis": f"${h['cost_basis']:.2f}",
+            "Gain/Loss": f"${h['gain_loss']:,.0f}",
+            "Gain/Loss %": f"{h['gain_loss_pct']:+.1f}%",
+            "Div/Share": f"${h['div']:.4f}",
+            "Monthly": f"${h['monthly']:.2f}",
+            "Annual": f"${h['annual']:,.0f}",
+            "Value": f"${h['value']:,.0f}",
+            "Yield": f"{h['yield_pct']:.1f}%"
+        } for h in metrics["holdings"]])
+        
+        st.dataframe(holdings_df, use_container_width=True, hide_index=True)
+
+# =====================================================
+# TAB 4: SAFETY MONITOR
+# =====================================================
+with tab4:
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors to view safety monitor")
+    else:
+        st.subheader("🛡️ Comprehensive Safety Analysis")
+        
+        col1, col2 = st.columns([1, 3])
+        
+        with col1:
+            if st.button("🔍 Run Full Safety Check", type="primary", use_container_width=True):
+                with st.spinner("Analyzing portfolio safety..."):
+                    st.session_state.last_safety_check = datetime.now()
+                    
+                    # Trigger alerts if configured
+                    if st.session_state.alert_settings.get("enable_email") or st.session_state.alert_settings.get("enable_sms"):
+                        alerts_sent = trigger_alerts_if_needed()
+                        if alerts_sent:
+                            st.success(f"✅ Sent {len(alerts_sent)} alerts")
+                            for alert in alerts_sent:
+                                st.info(alert)
+        
+        with col2:
+            if hasattr(st.session_state, 'last_safety_check'):
+                st.info(f"Last check: {st.session_state.last_safety_check.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # Get all alerts
+        div_alerts = analyze_dividend_trends()
+        price_alerts_list = check_price_alerts()
+        
+        all_alerts = div_alerts + price_alerts_list
+        
+        if not all_alerts:
+            st.success("✅ All safety checks passed! No concerns detected.")
+        else:
+            critical = [a for a in all_alerts if a.get("severity") == "critical"]
+            warnings = [a for a in all_alerts if a.get("severity") == "warning"]
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Critical Alerts", len(critical), delta=None if len(critical) == 0 else "⚠️")
+            with col2:
+                st.metric("Warnings", len(warnings))
+            with col3:
+                st.metric("Info", len(all_alerts) - len(critical) - len(warnings))
+            
+            st.divider()
+            
+            # Display alerts
+            for alert in all_alerts:
+                severity_class = {
+                    "critical": "alert-critical",
+                    "warning": "alert-warning",
+                    "success": "alert-success",
+                    "info": "alert-info"
+                }.get(alert.get("severity", "info"), "alert-info")
+                
+                st.markdown(f"""
+                <div class="{severity_class}">
+                    <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 0.5rem;">{alert['message']}</div>
+                    <div style="margin-bottom: 0.5rem;"><strong>Recommended Action:</strong> {alert['action']}</div>
+                    {f"<div><strong>Details:</strong> Change: {alert.get('change_pct', 0):.1f}%</div>" if 'change_pct' in alert else ""}
+                </div>
+                """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Dividend History Charts
+        st.subheader("📊 Dividend Trend Analysis")
+        
+        selected_ticker = st.selectbox("Select ETF to analyze", ETF_LIST, key="div_trend_select")
+        
+        if st.session_state.dividend_history[selected_ticker]:
+            df_div = pd.DataFrame(st.session_state.dividend_history[selected_ticker])
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df_div["date"],
+                y=df_div["dividend"],
+                mode='lines+markers',
+                name='Dividend',
+                line=dict(color='#22c55e', width=3)
+            ))
+            
+            # Add average line
+            avg_div = df_div["dividend"].mean()
+            fig.add_hline(y=avg_div, line_dash="dash", line_color="#94a3b8", 
+                         annotation_text=f"Average: ${avg_div:.4f}")
+            
+            fig.update_layout(
+                title=f"{selected_ticker} Dividend History (Last 12 Weeks)",
+                xaxis_title="Date",
+                yaxis_title="Dividend per Share ($)",
+                hovermode='x unified',
+                height=400
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Stats
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Current", f"${df_div['dividend'].iloc[-1]:.4f}")
+            with col2:
+                st.metric("Average", f"${avg_div:.4f}")
+            with col3:
+                trend = ((df_div['dividend'].iloc[-1] / df_div['dividend'].iloc[0]) - 1) * 100
+                st.metric("12-Week Trend", f"{trend:+.1f}%")
+            with col4:
+                volatility = df_div['dividend'].std() / avg_div * 100
+                st.metric("Volatility", f"{volatility:.1f}%")
+
+# =====================================================
+# TAB 5: NEWS & INTELLIGENCE
+# =====================================================
+with tab5:
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors to view news intelligence")
+    else:
+        st.subheader("📰 Real-Time News & Market Intelligence")
+        
+        st.info("ℹ️ **News Sources:** Searches news for (1) The ETF itself, (2) Underlying stocks (NVDA, AAPL, MSFT, etc.), and (3) Connected markets (NASDAQ-100, S&P 500, Tech Sector). This provides comprehensive market intelligence even for niche ETFs.")
+        
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            selected_etf = st.selectbox("Select ETF for Deep Analysis", ["ALL"] + ETF_LIST)
+        
+        with col2:
+            if st.button("🔄 Refresh News", type="primary", use_container_width=True):
+                with st.spinner("Fetching latest news..."):
+                    st.session_state.news_cache = fetch_real_news_sentiment()
+                    st.success("News updated!")
+        
+        # Get news data
+        if not st.session_state.news_cache.get("articles"):
+            with st.spinner("Loading news..."):
+                st.session_state.news_cache = fetch_real_news_sentiment()
+        
+        news_data = st.session_state.news_cache
+        
+        # Overall Sentiment Dashboard
+        st.markdown("### Market Sentiment Overview")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        sentiment_counts = {"POSITIVE": 0, "NEUTRAL": 0, "NEGATIVE": 0}
+        for article in news_data["articles"]:
+            sentiment_counts[article["sentiment"]] += 1
+        
+        total_articles = len(news_data["articles"])
+        
+        with col1:
+            pct = (sentiment_counts["POSITIVE"] / total_articles * 100) if total_articles > 0 else 0
+            st.metric("🟢 Positive", f"{pct:.0f}%", delta=f"{sentiment_counts['POSITIVE']} articles")
+        
+        with col2:
+            pct = (sentiment_counts["NEUTRAL"] / total_articles * 100) if total_articles > 0 else 0
+            st.metric("🟡 Neutral", f"{pct:.0f}%", delta=f"{sentiment_counts['NEUTRAL']} articles")
+        
+        with col3:
+            pct = (sentiment_counts["NEGATIVE"] / total_articles * 100) if total_articles > 0 else 0
+            st.metric("🔴 Negative", f"{pct:.0f}%", delta=f"{sentiment_counts['NEGATIVE']} articles")
+        
+        with col4:
+            overall = news_data["overall_sentiment"]
+            overall_pct = (overall + 1) / 2 * 100  # Convert from [-1,1] to [0,100]
+            st.metric("Overall Score", f"{overall_pct:.0f}/100")
+        
+        st.divider()
+        
+        # News Articles
+        st.markdown("### Latest News & Analysis")
+        
+        articles_to_show = news_data["articles"]
+        if selected_etf != "ALL":
+            articles_to_show = [a for a in articles_to_show if selected_etf in a["ticker"]]
+        
+        for article in articles_to_show:
+            st.markdown(f"""
+            <div class="news-card">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                    <div style="flex: 1;">
+                        <div style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.25rem;">{article['title']}</div>
+                        <div style="font-size: 0.85rem; color: #64748b;">{article['source']} • {article['time']}</div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <span class="{article['sentiment_class']}">{article['sentiment']}</span>
+                        <span style="background: #334155; padding: 0.5rem; border-radius: 0.5rem; font-weight: 700;">{article['ticker']}</span>
+                    </div>
+                </div>
+                <div style="color: #94a3b8; line-height: 1.6;">{article['summary']}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.divider()
+        
+        # Underlying Holdings Monitor
+        st.markdown("### Underlying Holdings Monitor")
+        
+        selected_for_underlying = st.selectbox(
+            "Select ETF to view underlying stocks",
+            ETF_LIST,
+            key="underlying_select"
+        )
+        
+        underlying_stocks = ETF_INFO[selected_for_underlying]["top_holdings"]
+        
+        st.info(f"**{selected_for_underlying}** tracks: {ETF_INFO[selected_for_underlying]['underlying_index']}")
+        st.write(f"**Top Holdings:** {', '.join(underlying_stocks)}")
+
+# =====================================================
+# TAB 6: COMPOUND PROJECTIONS
+# =====================================================
+with tab6:
+    st.subheader("🚀 Compound Growth Projections")
+    
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors to view projections")
+    else:
+        # Projection function
+        def project_compound_growth():
+            """Project portfolio growth with dividend reinvestment + monthly deposits"""
+            current_metrics = calculate_current_metrics()
+            target = st.session_state.target_income
+            monthly_deposit = st.session_state.monthly_deposit
+            
+            # Starting values
+            portfolio = {ticker: st.session_state.holdings[ticker]["shares"] for ticker in ETF_LIST}
+            cash = st.session_state.cash
+            
+            # Track projection
+            projection_data = []
+            month = 0
+            max_months = 360  # 30 years max
+            
+            while month < max_months:
+                # Calculate current monthly income
+                monthly_income = 0
+                portfolio_value = cash
+                
+                for ticker in ETF_LIST:
+                    shares = portfolio[ticker]
+                    div = st.session_state.holdings[ticker]["div"]
+                    price = current_metrics["prices"][ticker]
+                    
+                    weekly_income = shares * div
+                    monthly_income += weekly_income * 52 / 12
+                    portfolio_value += shares * price
+                
+                # Record projection point
+                projection_data.append({
+                    "month": month,
+                    "portfolio_value": portfolio_value,
+                    "monthly_income": monthly_income,
+                    "portfolio": portfolio.copy()
+                })
+                
+                # Check if target reached
+                if monthly_income >= target:
+                    return {
+                        "months_to_target": month,
+                        "years_to_target": month / 12,
+                        "projection_data": projection_data,
+                        "final_portfolio": portfolio,
+                        "final_value": portfolio_value,
+                        "final_income": monthly_income,
+                        "reached": True
+                    }
+                
+                # Simulate one month of growth
+                monthly_dividends = monthly_income
+                available_cash = monthly_dividends + monthly_deposit
+                
+                # Reinvest proportionally
+                total_shares_value = sum(portfolio[t] * current_metrics["prices"][t] for t in ETF_LIST)
+                
+                for ticker in ETF_LIST:
+                    if total_shares_value > 0:
+                        ticker_weight = (portfolio[ticker] * current_metrics["prices"][ticker]) / total_shares_value
+                        ticker_investment = available_cash * ticker_weight
+                        shares_to_buy = ticker_investment / current_metrics["prices"][ticker]
+                        portfolio[ticker] += shares_to_buy
+                
+                month += 1
+            
+            return {
+                "months_to_target": max_months,
+                "years_to_target": max_months / 12,
+                "projection_data": projection_data,
+                "final_portfolio": portfolio,
+                "final_value": projection_data[-1]["portfolio_value"],
+                "final_income": projection_data[-1]["monthly_income"],
+                "reached": False
+            }
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.markdown("### Settings")
+            
+            st.session_state.target_income = st.number_input(
+                "Monthly Income Target ($)",
+                min_value=0.0,
+                step=100.0,
+                value=st.session_state.target_income,
+                key="target_proj"
+            )
+            
+            st.session_state.monthly_deposit = st.number_input(
+                "Monthly Additional Deposit ($)",
+                min_value=0.0,
+                step=50.0,
+                value=st.session_state.monthly_deposit,
+                key="deposit_proj"
+            )
+            
+            if st.button("🔄 Run Projection", type="primary"):
+                with st.spinner("Calculating compound growth..."):
+                    projection = project_compound_growth()
+                    st.session_state.projection = projection
+        
+        with col2:
+            if "projection" in st.session_state:
+                proj = st.session_state.projection
+                
+                if proj["reached"]:
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 2px solid #3b82f6; border-radius: 1rem; padding: 2rem;">
+                        <div style="text-align: center; font-size: 1.1rem; opacity: 0.8; margin-bottom: 0.5rem;">Time to Reach ${st.session_state.target_income:,.0f}/month</div>
+                        <div style="text-align: center; font-size: 3.5rem; font-weight: 700; color: #22c55e; margin: 1rem 0;">{proj['years_to_target']:.1f} years</div>
+                        <div style="text-align: center; font-size: 1.2rem; color: #94a3b8; margin-bottom: 2rem;">({proj['months_to_target']} months)</div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center; padding-top: 1.5rem; border-top: 1px solid #334155;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Final Portfolio Value</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #3b82f6;">${proj['final_value']:,.0f}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Final Monthly Income</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e;">${proj['final_income']:,.0f}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Total Contributed</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #eab308;">${proj['months_to_target'] * st.session_state.monthly_deposit:,.0f}</div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.error(f"⚠️ Target of ${st.session_state.target_income:,.0f}/month not reachable within 30 years with current settings")
+        
+        # PROJECTION CHART
+        if "projection" in st.session_state and st.session_state.projection["reached"]:
+            st.divider()
+            st.subheader("Growth Timeline")
+            
+            proj_df = pd.DataFrame(st.session_state.projection["projection_data"])
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(
+                x=proj_df["month"] / 12,
+                y=proj_df["portfolio_value"],
+                mode='lines',
+                name='Portfolio Value',
+                line=dict(color='#3b82f6', width=3),
+                fill='tozeroy',
+                fillcolor='rgba(59, 130, 246, 0.1)'
+            ))
+            
+            fig.add_trace(go.Scatter(
+                x=proj_df["month"] / 12,
+                y=proj_df["monthly_income"],
+                mode='lines',
+                name='Monthly Income',
+                line=dict(color='#22c55e', width=3),
+                yaxis='y2'
+            ))
+            
+            fig.add_hline(y=st.session_state.target_income, line_dash="dash",
+                         line_color="#eab308", annotation_text="Target Income",
+                         yref='y2')
+            
+            fig.update_layout(
+                xaxis_title="Years",
+                yaxis_title="Portfolio Value ($)",
+                yaxis2=dict(title="Monthly Income ($)", overlaying='y', side='right'),
+                hovermode='x unified',
+                height=500,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Final holdings breakdown
+            st.divider()
+            st.subheader("Final Portfolio Composition")
+            
+            col1, col2, col3 = st.columns(3)
+            for idx, ticker in enumerate(ETF_LIST):
+                final_shares = st.session_state.projection["final_portfolio"][ticker]
+                current_shares = st.session_state.holdings[ticker]["shares"]
+                shares_added = final_shares - current_shares
+                
+                with [col1, col2, col3][idx]:
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 1rem; padding: 1.5rem;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6; margin-bottom: 0.5rem;">{ticker}</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Current Shares</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #94a3b8; margin-bottom: 0.75rem;">{current_shares:.0f}</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Final Shares</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e; margin-bottom: 0.75rem;">{final_shares:.0f}</div>
+                        <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Shares Added</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e;">+{shares_added:.0f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+# =====================================================
+# TAB 7: PORTFOLIO EDITOR
+# =====================================================
+with tab7:
+    st.subheader("📁 Portfolio Editor")
+    
+    for ticker in ETF_LIST:
+        price = get_price(ticker)
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #334155;">
+                <div style="font-size: 1.8rem; font-weight: 700; color: #3b82f6;">{ticker}</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #22c55e;">${price:.2f}</div>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.session_state.holdings[ticker]["shares"] = st.number_input(
+                "Number of Shares",
+                min_value=0,
+                value=st.session_state.holdings[ticker]["shares"],
+                key=f"shares_{ticker}_edit"
+            )
+        
+        with col2:
+            st.session_state.holdings[ticker]["div"] = st.number_input(
+                "Weekly Dividend per Share ($)",
+                min_value=0.0,
+                step=0.01,
+                format="%.4f",
+                value=st.session_state.holdings[ticker]["div"],
+                key=f"div_{ticker}_edit"
+            )
+        
+        with col3:
+            st.session_state.holdings[ticker]["cost_basis"] = st.number_input(
+                "Cost Basis per Share ($)",
+                min_value=0.0,
+                step=0.10,
+                format="%.2f",
+                value=st.session_state.holdings[ticker].get("cost_basis", price),
+                key=f"cost_{ticker}_edit"
+            )
+        
+        # Calculate and display metrics
+        shares = st.session_state.holdings[ticker]["shares"]
+        div = st.session_state.holdings[ticker]["div"]
+        cost_basis = st.session_state.holdings[ticker].get("cost_basis", price)
+        
+        weekly = shares * div
+        monthly = weekly * 52 / 12
+        annual = weekly * 52
+        value = shares * price
+        yield_pct = (annual / value * 100) if value > 0 else 0
+        
+        cost_total = shares * cost_basis
+        gain_loss = value - cost_total
+        gain_loss_pct = ((value / cost_total) - 1) * 100 if cost_total > 0 else 0
+        
+        metrics = calculate_current_metrics()
+        portfolio_pct = (value / metrics['total_value'] * 100) if metrics['total_value'] > 0 else 0
+        
+        st.markdown(f"""
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #334155;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Weekly</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e;">${weekly:.2f}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Monthly</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e;">${monthly:.2f}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Annual</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #22c55e;">${annual:,.0f}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Value</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #3b82f6;">${value:,.0f}</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">Gain/Loss</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: {'#22c55e' if gain_loss >= 0 else '#ef4444'};">${gain_loss:,.0f} ({gain_loss_pct:+.1f}%)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.25rem;">% Portfolio</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #eab308;">{portfolio_pct:.1f}%</div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.divider()
+    
+    # CASH
+    st.subheader("💰 Cash Position")
+    st.session_state.cash = st.number_input(
+        "Cash Balance ($)",
+        min_value=0.0,
+        step=100.0,
+        value=st.session_state.cash,
+        key="cash_edit"
+    )
+
+# =====================================================
+# TAB 8: PERFORMANCE TRACKING
+# =====================================================
+with tab8:
+    st.subheader("📈 Performance Tracking")
+    st.info("Track your portfolio performance over time with detailed metrics and charts.")
+    
+    if st.session_state.snapshots:
+        st.success(f"You have {len(st.session_state.snapshots)} saved snapshots to analyze")
+    else:
+        st.warning("No snapshots yet. Save snapshots to track performance over time.")
+
+# =====================================================
+# TAB 9: SNAPSHOTS
+# =====================================================
+with tab9:
+    st.subheader("📸 Portfolio Snapshots")
+    
+    if not st.session_state.PORTFOLIO_LOCKED:
+        st.warning("⚠️ Fix validation errors to save snapshots")
+    else:
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            snapshot_name = st.text_input(
+                "Snapshot Name",
+                value=f"Snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                key="snapshot_name"
+            )
+        
+        with col2:
+            if st.button("📸 Save Current State", use_container_width=True):
+                metrics = calculate_current_metrics()
+                
+                st.session_state.snapshots.append({
+                    "name": snapshot_name,
+                    "timestamp": datetime.now(),
+                    "holdings": st.session_state.holdings.copy(),
+                    "cash": st.session_state.cash,
+                    "value": metrics['total_value'],
+                    "income": metrics['monthly_income'],
+                    "monthly_deposit": st.session_state.monthly_deposit
+                })
+                st.success("Snapshot saved!")
+                st.rerun()
+        
+        st.divider()
+        
+        if st.session_state.snapshots:
+            st.markdown(f"**{len(st.session_state.snapshots)} saved snapshots**")
+            
+            for i, snap in enumerate(reversed(st.session_state.snapshots)):
+                with st.expander(f"📊 {snap['name']} — {snap['timestamp'].strftime('%Y-%m-%d %H:%M')}"):
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Value", f"${snap['value']:,.0f}")
+                    with col2:
+                        st.metric("Monthly Income", f"${snap['income']:,.0f}")
+                    with col3:
+                        if st.button("Delete", key=f"del_{i}"):
+                            st.session_state.snapshots.pop(-(i+1))
+                            st.rerun()
+                    
+                    st.markdown("**Holdings:**")
+                    for ticker, data in snap['holdings'].items():
+                        st.write(f"**{ticker}:** {data['shares']} shares @ ${data['div']:.4f}/week")
+                    st.write(f"**Cash:** ${snap['cash']:,.0f}")
+                    st.write(f"**Monthly Deposit:** ${snap.get('monthly_deposit', 0):.0f}")
+        else:
+            st.info("No snapshots yet. Save your first one above!")
 
 st.divider()
 st.caption("Income Strategy Engine v4.0 - AI Powered Edition • " + datetime.now().strftime("%b %d, %Y %I:%M %p"))
